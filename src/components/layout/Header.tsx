@@ -1,13 +1,21 @@
 import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Container } from './Container';
+import { useAuth } from '../../context/AuthContext';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // დროებითი მნიშვნელობები (Day 3-სა და Day 5-ში ჩანაცვლდება Context-ით)
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  // დროებითი კალათის რაოდენობა (მე-5 დღეს მივაბამთ CartContext-ს)
   const cartCount = 0;
-  const isLoggedIn = false;
+
+  const handleLogout = (): void => {
+    logout();
+    navigate('/');
+  };
 
   const navLinkClass = ({ isActive }: { isActive: boolean }): string =>
     `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -45,13 +53,20 @@ export function Header() {
               </span>
             </NavLink>
 
-            {isLoggedIn ? (
-              <button
-                type="button"
-                className="ml-2 rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer"
-              >
-                Log out
-              </button>
+            {/* 👇 აი აქ წყდება, Log out გამოჩნდეს თუ Log in 👇 */}
+            {user.isLoggedIn ? (
+              <div className="ml-2 flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-500">
+                  Hi, {user.username}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors cursor-pointer"
+                >
+                  Log out
+                </button>
+              </div>
             ) : (
               <NavLink
                 to="/login"
@@ -62,14 +77,14 @@ export function Header() {
             )}
           </nav>
 
-          {/* Mobile Burger Button (<= 480px / sm breakpoint) */}
+          {/* Mobile Burger Button */}
           <button
             type="button"
             onClick={() => setIsMobileMenuOpen((prev) => !prev)}
             className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 sm:hidden"
             aria-label="Toggle navigation menu"
           >
-            <span className="text-xl font-bold cursor-pointer">{isMobileMenuOpen ? '✕' : '☰'}</span>
+            <span className="text-xl font-bold">{isMobileMenuOpen ? '✕' : '☰'}</span>
           </button>
         </div>
 
@@ -98,13 +113,27 @@ export function Header() {
                 )}
               </span>
             </NavLink>
-            <NavLink
-              to="/login"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="mt-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-indigo-700"
-            >
-              Log in
-            </NavLink>
+
+            {user.isLoggedIn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="mt-1 rounded-lg border border-slate-300 px-4 py-2.5 text-center text-sm font-medium text-slate-700 hover:bg-slate-100"
+              >
+                Log out ({user.username})
+              </button>
+            ) : (
+              <NavLink
+                to="/login"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="mt-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-indigo-700"
+              >
+                Log in
+              </NavLink>
+            )}
           </nav>
         )}
       </Container>
