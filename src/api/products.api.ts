@@ -10,6 +10,7 @@ export async function fetchProducts(limit=12, skip = 0) : Promise<ProductsRespon
     }
 
     const data = (await response.json()) as ProductsResponse;
+    console.log(data);
+    
     return data;
 }
-fetchProducts()

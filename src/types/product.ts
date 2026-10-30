@@ -1,3 +1,5 @@
+import type { Key, ReactNode } from "react";
+
 export interface Review {
     rating: number;
     comment: string;
@@ -6,6 +8,8 @@ export interface Review {
 }
 
 export interface Product {
+    key: Key | null | undefined;
+    name: ReactNode;
     id: number;
     title: string;
     description: string;
