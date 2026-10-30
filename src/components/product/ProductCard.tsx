@@ -23,7 +23,7 @@ const ProductCard = ({product, onAddToCart}: ProductCardProps) => {
         onClick={() => navigate(`/products/${product.id}`)}
         className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md cursor-pointer"
         >
-        <div className="w-100 grid grid-cols-2">
+        <div className="grid grid-cols-3">
             {/* Product Image (width/height და lazy loading CLS-ის წინააღმდეგ) */}
         <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
             <img
