@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { fetchProducts } from "../api/products.api"
 import type { Product } from "../types/product";
 import { ProductGrid } from "../components/product/ProductGrid";
+import { useCart } from "../context/CartContext";
 
  const CatalogPage = () => {
 
@@ -9,6 +10,8 @@ import { ProductGrid } from "../components/product/ProductGrid";
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  const { addItem } = useCart();
 
   useEffect(()=>{
   async function loadData() {
@@ -25,7 +28,8 @@ import { ProductGrid } from "../components/product/ProductGrid";
   loadData();
 },[]);
 
-const handleAddToCart = (product: Product) => {
+const handleAddToCart = (product: Product): void => {
+  addItem(product);
   setFeedback(`Added "${product.title}" to cart ✓`);
   setTimeout(() => setFeedback(null), 2500);
 }
