@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Container } from './Container';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -10,7 +11,8 @@ export function Header() {
   const navigate = useNavigate();
 
   // დროებითი კალათის რაოდენობა (მე-5 დღეს მივაბამთ CartContext-ს)
-  const cartCount = 0;
+  const { totalItems } = useCart();
+  const cartCount = totalItems;
 
   const handleLogout = (): void => {
     logout();
