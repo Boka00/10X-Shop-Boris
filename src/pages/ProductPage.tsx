@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useParams } from 'react-router-dom';
+import { Link, useParams} from 'react-router-dom';
 import type { Product } from '../types/product';
 import { fetchProductById } from '../api/products.api';
 import { discountPrice, formatPrice } from '../utils/format';
+import { useCart } from '../context/CartContext';
 
 export const ProductPage = () => {
   
@@ -14,6 +14,19 @@ export const ProductPage = () => {
   const [selectedImage, setSelectedImage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [quantity, setQuantity] = useState<number>(1);
+  const [feedback, setFeedback] = useState<string | null>(null)
+
+  const { addItem } = useCart();
+  const handleAddToCart = () => {
+    if (!product) return;
+    addItem(product, quantity);
+    setFeedback(`Added ${quantity} item(s) to cart ✓`)
+    setTimeout(() => {
+      setFeedback(null)
+    }, 2500);
+  }
 
 
   useEffect(()=>{
@@ -29,6 +42,7 @@ export const ProductPage = () => {
         const data = await fetchProductById(productId)
         setProduct(data);
         setSelectedImage(data.images?.[0] || data.thumbnail)
+        setQuantity(1);
 
       }catch(error: unknown){
         setError(error instanceof Error ? error.message : "Product not found")
@@ -54,7 +68,7 @@ export const ProductPage = () => {
   if (error || !product){
 
       return (
-        <div className="mx-auto my-10 max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto my-10 max-w-md rounded-2xl border border-red-400 bg-white p-8 text-center shadow-sm">
         <h2 className="text-xl font-bold text-slate-900">Product Not Found</h2>
         <p className="mt-2 text-sm text-slate-600">
           {error ?? 'The product you are looking for does not exist.'}
@@ -81,6 +95,11 @@ export const ProductPage = () => {
 
   return (
     <div className="space-y-6 py-4">
+      {feedback && (
+        <div className="fixed top-20 right-6 z-50 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 shadow-md">
+          {feedback}
+        </div>
+      )}
       {/* Back Link */}
       <div>
         <Link
@@ -116,6 +135,7 @@ export const ProductPage = () => {
           <div className="flex gap-3 overflow-x-auto pb-2">
             {galleryImages.map((imgUrl)=> (
               <button 
+              type='button'
               key={imgUrl}
               className={`relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border-2 bg-slate-50 transition-all cursor-pointer ${
                     selectedImage === imgUrl
@@ -198,6 +218,45 @@ export const ProductPage = () => {
             </p>
           </div>
 
+                  {/* Stepper & Add to Cart Action */}
+          <div className="space-y-4 border-t border-slate-100 pt-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-slate-700">Quantity:</span>
+              <div className="flex items-center rounded-lg border border-slate-300 bg-white">
+    
+                <button
+                  type="button"
+                  onClick={() => setQuantity((prev => prev - 1))}
+                  disabled={isOutOfStock || quantity <= 1}
+                  className="cursor-pointer px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  -
+                </button>
+
+                <span className="w-10 text-center text-sm font-semibold text-slate-900">
+                  {quantity}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={()=> setQuantity((prev => prev + 1 ))}
+                  disabled={isOutOfStock || quantity >= product.stock}
+                  className="cursor-pointer px-3 py-1.5 text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              className="w-full cursor-pointer rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isOutOfStock ? 'Out of stock' : `Add ${quantity} to cart`}
+            </button>
+          </div>
          
           <div className="border-t border-slate-100 pt-4 text-xs text-slate-400">
             SKU ID: #{product.id}
