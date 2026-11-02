@@ -14,7 +14,7 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route path="/" element={<CatalogPage />} />
         <Route path="/login" element={<LoginPage/>} />
-        <Route path="/products/:id" element={<ProductPage/>} />
+        <Route path="/products:id" element={<ProductPage/>} />
         <Route path="/cart" element={<CartPage/>} />
         <Route path="/checkout" element={
           <ProtectedRoute>
