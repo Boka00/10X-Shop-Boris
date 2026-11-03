@@ -67,10 +67,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  // TODO 1: დაასრულე setQuantity ფუნქცია:
-  // გადაუარე prevItems-ს .map()-ით: თუ item.productId === productId,
-  // დააბრუნე განახლებული ობიექტი { ...item, quantity: Math.max(1, Math.min(qty, item.stock)) }
-  // წინააღმდეგ შემთხვევაში დააბრუნე იგივე item.
+
   const setQuantity = (productId: number, qty: number): void => {
     setItems((prevItems) =>
       prevItems.map((item) =>
@@ -80,24 +77,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  // TODO 2: დაწერე removeItem ფუნქცია:
-  // setItems-ში გამოიყენე prevItems.filter(...), რომ დატოვო მხოლოდ ის ნივთები,
-  // რომელთა item.productId !== productId
   const removeItem = (productId: number): void => {
-    // დაწერე აქ...
     setItems((prevItems) => 
     prevItems.filter((item)=> item.productId !== productId)
     )
   };
 
-  // TODO 3: დაწერე clearCart ფუნქცია, რომელიც items სთეითს გახდის ცარიელ მასივს: []
   const clearCart = (): void => {
     // დაწერე აქ...
     setItems([]);
   };
 
-  // TODO 4: გამოთვალე totalItems (ყველა ნივთის quantity-ს ჯამი Header-ის ბეჯისთვის)
-  // მინიშნება: items.reduce((sum, item) => sum + item.quantity, 0)
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
 
   // ფასდაკლებული ჯამის (Subtotal) დათვლა
