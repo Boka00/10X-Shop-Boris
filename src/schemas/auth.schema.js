@@ -9,3 +9,12 @@ export const loginSchema = yup.object().shape({
         .matches(passwordRegex, "must be symbols(1 uppercase) and numbers")
         .required('Password is required')
 })
+
+ 
+export const checkoutSchema = yup.object().shape({
+    fullname: yup.string().trim().min(2, 'Name Is Too short').required('Full name is required'),
+    email: yup.string().trim().email('Invalid email').required('Email is required'),
+    address: yup.string().trim().min(5, 'Enter a valid street address').required('Address is required'),
+    city: yup.string().trim().min(2, 'Enter a valid city').required('City is required'),
+    zipCode: yup.number().typeError('ZIP code must be a number').required('ZIP code is required'),
+})
