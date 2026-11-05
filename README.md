@@ -1,75 +1,79 @@
-# React + TypeScript + Vite
+# 🛒 10X Shop — Full-Featured React E-Commerce Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive, and feature-rich e-commerce web application built with React, TypeScript, Tailwind CSS, Formik, Yup, and React Router. Developed as a comprehensive single-page application (SPA) replicating a production-grade shopping experience.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Live Demo & Repository
+* **GitHub Repository:** [Boka00/10X-Shop](https://github.com/Boka00)
+* **Live Deployment:** [https://10-x-shop-boris.vercel.app/](https://10-x-shop-boris.vercel.app/)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack & Architecture
 
-## Expanding the ESLint configuration
+* **Core Library:** React 18+ (Functional Components, Custom Hooks)
+* **Type Safety:** TypeScript
+* **Styling & UI:** Tailwind CSS (Modern utility-first styling with responsive grid layouts)
+* **Routing:** React Router DOM (Nested routing, Protected Routes, dynamic params)
+* **Form Validation:** Formik & Yup (Robust client-side validation and error handling)
+* **State Management:** React Context API (`AuthContext`, `CartContext`) combined with `localStorage` persistence
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## ✨ Key Features
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+1. **Authentication & Protected Routes (`AuthContext`):**
+   * Secure login simulation with DummyJSON API integration.
+   * Persistent user session via `localStorage`.
+   * Automatic redirection of unauthenticated users attempting to access protected routes (e.g., `/checkout`).
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. **Dynamic Product Catalog & Advanced Filtering:**
+   * **Debounced Search (`useDebounce`):** 300ms delayed search input filtering across product titles and descriptions without lag.
+   * **Category Filtering:** Dynamic category extraction and filtering.
+   * **Multi-Criteria Sorting:** Sort by price (Low to High, High to Low) and customer ratings.
+   * **Client-Side Pagination:** Seamless page navigation (`Previous`, page numbers, `Next`) with automatic reset to page 1 upon filter changes.
 
-```
+3. **Interactive Cart Management (`CartContext`):**
+   * Add, remove, and update quantities with a stock-aware quantity stepper.
+   * Real-time calculation of subtotal, discount savings, and item counts.
+   * Persistent cart state across page reloads.
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+4. **Multi-Step Checkout & Order Confirmation:**
+   * Formik-powered checkout form with strict Yup validation (Full Name, Email, Street Address, City, ZIP Code).
+   * Generates a unique order confirmation receipt (`OrderSuccess`) and clears the cart upon successful submission.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📂 Project Structure
 
-```
+```text
+10-X-Shop/
+├── public/
+│   ├── favicon.svg
+│   └── icons.svg
+├── src/
+│   ├── api/          # API integration (DummyJSON products & auth)
+│   ├── assets/       # Static images & graphics
+│   ├── components/
+│   │   ├── cart/     # Cart item rows & cart UI components
+│   │   ├── checkout/ # Order success confirmation card
+│   │   ├── common/   # Reusable components (Pagination, etc.)
+│   │   ├── layout/   # Container, Header, Footer, Layout, ScrollToTop
+│   │   └── product/  # ProductCard, ProductFilters, ProductGrid
+│   ├── context/      # React Context providers (AuthContext, CartContext)
+│   ├── hooks/        # Custom hooks (useDebounce)
+│   ├── pages/        # Page components (Cart, Catalog, Checkout, Login, NotFound, ProductDetails)
+│   ├── routes/       # AppRoutes & ProtectedRoute authorization
+│   ├── schemas/      # Yup validation schemas
+│   ├── types/        # TypeScript interfaces & types (cart, order, product, user)
+│   ├── utils/        # Helper functions (price formatting, discounts)
+│   ├── App.css
+│   ├── App.tsx
+│   ├── index.css
+│   └── main.tsx
+├── DEBUG-LOG.md      # Technical bug fixes and issue resolution log
+├── PLAN.md           # Project development roadmap and planning
+├── vercel.json       # SPA routing configuration for Vercel
+├── package.json
+└── README.md
