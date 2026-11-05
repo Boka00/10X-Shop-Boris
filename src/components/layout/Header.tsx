@@ -57,10 +57,25 @@ export function Header() {
 
             {/* 👇 აი აქ წყდება, Log out გამოჩნდეს თუ Log in 👇 */}
             {user.isLoggedIn ? (
+              <>
+               <NavLink to="/orders" className={navLinkClass}>
+                  <span className="inline-flex items-center gap-1.5">
+                    Orders
+                  </span>
+                </NavLink>
+                
               <div className="ml-2 flex items-center gap-2">
-                <span className="text-xs font-medium text-slate-500">
-                  Hi, {user.username}
-                </span>
+                <span className="text-sm text-slate-500">|</span>
+                <NavLink to="/profile" className={navLinkClass}>
+                  <div className="inline-flex items-center gap-2">
+                     <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+                    {user.username.at(0)?.toUpperCase()}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    {user.username}
+                  </span>
+                  </div>
+                </NavLink>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -69,6 +84,7 @@ export function Header() {
                   Log out
                 </button>
               </div>
+              </>
             ) : (
               <NavLink
                 to="/login"
