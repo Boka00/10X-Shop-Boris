@@ -1,8 +1,14 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { fetchProducts } from "../api/products.api"
 import type { Product } from "../types/product";
 import { ProductGrid } from "../components/product/ProductGrid";
 import { useCart } from "../context/CartContext";
+import { useDebounce } from "../hooks/useDebounce";
+import { discountPrice } from "../utils/format";
+import { ProductFilters, type SortOption } from "../components/product/ProductFilters";
+import { Pagination } from "../components/common/Pagination";
+
+const ITEMS_PER_PAGE = 12;
 
  const CatalogPage = () => {
 
@@ -10,6 +16,12 @@ import { useCart } from "../context/CartContext";
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('default');
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
   const { addItem } = useCart();
 
@@ -27,6 +39,68 @@ import { useCart } from "../context/CartContext";
   }
   loadData();
 },[]);
+
+  const categories = useMemo(() => {
+    return Array.from(new Set(products.map((p) => p.category)));
+  }, [products]);
+
+
+  const filteredProducts = useMemo(() => {
+    const query = debouncedSearch.trim().toLowerCase();
+
+    const filtered = products.filter((product) => {
+      const matchesCategory =
+        selectedCategory === "all" || product.category === selectedCategory;
+
+      const matchesSearch =
+        query === "" ||
+        product.title.toLowerCase().includes(query) ||
+        product.description.toLowerCase().includes(query);
+
+      return matchesCategory && matchesSearch;
+    });
+
+    if (sortBy === "default") return filtered;
+
+    return [...filtered].sort((a, b) => {
+      const priceA = discountPrice(a.price, a.discountPercentage);
+      const priceB = discountPrice(b.price, b.discountPercentage);
+
+      if (sortBy === "price-asc") return priceA - priceB;
+      if (sortBy === "price-desc") return priceB - priceA;
+      if (sortBy === "rating-desc") return b.rating - a.rating;
+      return 0;
+    });
+  }, [products, debouncedSearch, selectedCategory, sortBy]);
+
+  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  // --- Handlers (ფილტრის შეცვლისას გვერდს ვაბრუნებთ 1-ზე) ---
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (sort: SortOption) => {
+    setSortBy(sort);
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('all');
+    setSortBy('default');
+    setCurrentPage(1);
+  };
 
 const handleAddToCart = (product: Product): void => {
   addItem(product);
@@ -47,19 +121,62 @@ const handleAddToCart = (product: Product): void => {
             Catalog
           </h1>
           <p className="mt-1 text-sm text-slate-600">
-            Showing 1–{products.length} products
+            Explore our curated collection of quality products
           </p>
         </div>
 
         {/* Inline Feedback Toast */}
         {feedback && (
-          <div className="z-100 fixed right-6 top-16 rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-2 text-sm font-medium text-emerald-700">
+          <div className="fixed top-16 right-6 z-100 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700">
             {feedback}
           </div>
         )}
       </div>
-      {/* Product Grid — იხატება მხოლოდ ერთხელ! */}
-         <ProductGrid products={products} onAddToCart={handleAddToCart}/>
+
+      <ProductFilters
+        searchQuery={searchQuery}
+        onSearchChange={handleSearchChange}
+        selectedCategory={selectedCategory}
+        onCategoryChange={handleCategoryChange}
+        categories={categories}
+        sortBy={sortBy}
+        onSortChange={handleSortChange}
+        totalResults={filteredProducts.length}
+        onReset={handleResetFilters}
+      />
+
+      {filteredProducts.length === 0 ? (
+        <div className="rounded-2xl border border-slate-200 bg-white py-14 text-center shadow-sm">
+          <p className="text-base font-semibold text-slate-800">
+            No products match your filters
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            Try adjusting your search query or category selection.
+          </p>
+          <button
+            type="button"
+            onClick={handleResetFilters}
+            className="mt-4 cursor-pointer rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-indigo-700"
+          >
+            Clear all filters
+          </button>
+        </div>
+      ) : (
+        <>
+
+          <ProductGrid
+            products={paginatedProducts}
+            onAddToCart={handleAddToCart}
+          />
+
+          {/* TODO 8: ჩასვი Pagination კომპონენტი */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </>
+      )}
     </div>
   )
 }

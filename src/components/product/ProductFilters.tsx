@@ -1,6 +1,5 @@
 export type SortOption = 'default' | 'price-asc' | 'price-desc' | 'rating-desc';
 
-// TODO 1: შეავსე ProductFiltersProps ინტერფეისი
 interface ProductFiltersProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
