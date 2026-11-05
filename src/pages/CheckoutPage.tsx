@@ -118,7 +118,6 @@ export const CheckoutPage = () => {
               <label htmlFor="fullname" className="block text-sm font-medium text-slate-700">
                 Full Name
               </label>
-              {/* TODO: მიაბი formik.getFieldProps('fullName') */}
               <input
                 id="fullname"
                 type="text"
@@ -128,7 +127,6 @@ export const CheckoutPage = () => {
                 placeholder="John Doe"
                 className="mt-1.5 w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none"
               />
-              {/* TODO: გამოაჩინე შეცდომა, თუ formik.touched.fullName && formik.errors.fullName */}
               {touched.fullname && errors.fullname && (
                 <p className="mt-1 text-xs font-medium text-red-600">
                     {errors.fullname}
