@@ -3,17 +3,20 @@ import { AuthProvider } from './context/AuthContext'
 import { AppRoutes } from './routes/AppRoutes'
 import './App.css'
 import { CartProvider } from './context/CartContext'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <CartProvider>
-          <AppRoutes/>
-        </CartProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <CartProvider>
+            <AppRoutes />
+          </CartProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }
 
