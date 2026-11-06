@@ -1,65 +1,68 @@
-import { useNavigate } from "react-router-dom";
-import type { Product } from "../../types/product"
+import { memo } from "react";
+import { Link } from "react-router-dom";
+import type { Product } from "../../types/product";
 import { discountPrice, formatPrice } from "../../utils/format";
 
-interface ProductCardProps {
-    product: Product;
-    onAddToCart: (product: Product) => void
+export interface ProductCardProps {
+  product: Product;
+  onAddToCart: (product: Product) => void;
 }
 
-const ProductCard = ({product, onAddToCart}: ProductCardProps) => {
-    const navigate = useNavigate();
-
-    const finalPrice = discountPrice(product.price, product.discountPercentage);
-
-    const hasDiscount = product.discountPercentage >= 1;
-
-    const isOutOfStock = product.stock === 0;
-
-    const isLowStock = product.stock > 0 && product.stock <= 5;
+export const ProductCard = memo(({ product, onAddToCart }: ProductCardProps) => {
+  const finalPrice = discountPrice(product.price, product.discountPercentage);
+  const hasDiscount = product.discountPercentage >= 1;
+  const isOutOfStock = product.stock === 0;
+  const isLowStock = product.stock > 0 && product.stock <= 5;
 
   return (
-    <div
-      onClick={() => navigate(`/products/${product.id}`)}
-      className="group relative flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md cursor-pointer"
-    >
-      {/* Product Image (width/height და lazy loading CLS-ის წინააღმდეგ) */}
-      <div className="relative aspect-square w-full overflow-hidden bg-slate-100">
-        <img
-          src={product.thumbnail}
-          alt={product.title}
-          loading="lazy"
-          width="300"
-          height="300"
-          className="h-full w-full object-cover object-center transition-transform duration-300 group-hover:scale-105"
-        />
-        {hasDiscount && (
-          <span className="absolute top-2 left-2 rounded-md bg-emerald-600 px-2 py-1 text-xs font-semibold text-white">
-            -{Math.round(product.discountPercentage)}%
-          </span>
-        )}
+    <article className="group flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+      <div>
+        <Link
+          to={`/products/${product.id}`}
+          className="relative block aspect-square w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800"
+        >
+          <img
+            src={product.thumbnail}
+            alt={product.title}
+            width={300}
+            height={300}
+            loading="lazy"
+            className="h-full w-full object-contain p-3 transition-transform duration-300 group-hover:scale-105"
+          />
+          {hasDiscount && (
+            <span className="absolute top-2.5 left-2.5 rounded-md bg-emerald-600 px-2 py-0.5 text-xs font-bold text-white">
+              -{Math.round(product.discountPercentage)}%
+            </span>
+          )}
+        </Link>
+
+        <div className="mt-3 space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span className="truncate font-medium uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              {product.category}
+              {product.brand ? ` • ${product.brand}` : ""}
+            </span>
+            <span className="inline-flex items-center gap-1 font-semibold text-amber-600">
+              <svg className="h-3.5 w-3.5 fill-amber-400" viewBox="0 0 20 20" aria-hidden="true">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+              {product.rating}
+            </span>
+          </div>
+
+          <Link
+            to={`/products/${product.id}`}
+            className="line-clamp-1 block text-base font-bold text-slate-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400"
+          >
+            {product.title}
+          </Link>
+        </div>
       </div>
 
-      {/* Content */}
-      <div className="flex flex-1 flex-col justify-between p-4">
-        <div>
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-            {product.category} {product.brand ? `• ${product.brand}` : ''}
-          </p>
-          <h3 className="mt-1 text-sm font-semibold text-slate-900 line-clamp-1">
-            {product.title}
-          </h3>
-
-          <div className="mt-1 flex items-center gap-1 text-xs text-amber-500">
-            <span>★</span>
-            <span className="font-medium text-slate-700">{product.rating}</span>
-          </div>
-        </div>
-
-        <div className="mt-4 flex items-center justify-between">
-          {/* Prices */}
-          <div className="flex flex-col">
-            <span className="text-lg font-bold text-slate-900">
+      <div className="mt-4 space-y-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+        <div className="flex items-baseline justify-between">
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-extrabold text-slate-900 dark:text-white">
               {formatPrice(finalPrice)}
             </span>
             {hasDiscount && (
@@ -69,39 +72,34 @@ const ProductCard = ({product, onAddToCart}: ProductCardProps) => {
             )}
           </div>
 
-          {/* Stock Status Badge */}
           <span
-            className={`text-xs font-medium ${
+            className={`text-xs font-semibold ${
               isOutOfStock
-                ? 'text-red-600'
+                ? "text-red-600"
                 : isLowStock
-                ? 'text-amber-600'
-                : 'text-emerald-600'
+                ? "text-amber-600"
+                : "text-emerald-600"
             }`}
           >
             {isOutOfStock
-              ? 'Out of stock'
+              ? "Out of stock"
               : isLowStock
               ? `Only ${product.stock} left!`
-              : 'In stock'}
+              : "In stock"}
           </span>
         </div>
 
-        {/* Add to Cart Button */}
         <button
           type="button"
+          onClick={() => onAddToCart(product)}
           disabled={isOutOfStock}
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddToCart(product);
-          }}
-          className="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          className="w-full cursor-pointer rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isOutOfStock ? 'Out of stock' : 'Add to cart'}
+          {isOutOfStock ? "Out of stock" : "Add to cart"}
         </button>
       </div>
-    </div>
+    </article>
   );
-}
+});
 
-export default ProductCard
+export default ProductCard;

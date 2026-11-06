@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { getOrderStatus, getSavedOrders } from "../models/Order";
-import type { Order, OrderStatus } from "../types/order";
+import type { OrderStatus } from "../types/order";
 import { discountPrice, formatPrice } from "../utils/format";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import NotFoundPage from "./NotFound";
 import type { Product } from "../types/product";
 
@@ -22,13 +23,11 @@ export function OrderPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { user } = useAuth();
 
-  // ინიციალიზაცია პირდაპირ ფუნქციით — იცილებს ზედმეტ ეფექტებს
-  const [orders] = useState<Order[]>(() => getSavedOrders());
+  const orders = getSavedOrders(user.username);
   const [now, setNow] = useState<Date>(() => new Date());
-  const [feedback, setFeedback] = useState<string | null>(null);
 
-  // P6.2 - ყოველ 30 წამში სტატუსების გადათვლა cleanup-ით unmount-ზე
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       setNow(new Date());
@@ -39,7 +38,6 @@ export function OrderPage() {
     };
   }, []);
 
-  // თუ /orders/:id მარშრუტზე ვართ — ვაჩვენებთ დეტალურ გვერდს (P6.3)
   if (id !== undefined) {
     const foundOrder = orders.find(
       (o) => String(o.id) === id || o.number === id
@@ -63,13 +61,12 @@ export function OrderPage() {
           price: item.price,
           discountPercentage: item.discountPercentage,
           rating: 5,
-          stock: item.stock,
+          stock: Math.max(item.stock, item.quantity),
           thumbnail: item.thumbnail,
           images: [item.thumbnail],
         };
         addItem(syntheticProduct, item.quantity);
       });
-      setFeedback("Items added to cart ✓");
       navigate("/cart");
     };
 
@@ -83,7 +80,7 @@ export function OrderPage() {
             >
               ← Back to orders
             </Link>
-            <h1 className="mt-1 text-2xl font-bold text-slate-900">
+            <h1 className="mt-1 text-2xl font-bold text-slate-900 dark:text-white">
               Order #{foundOrder.number}
             </h1>
             <p className="text-sm text-slate-500">
@@ -100,14 +97,7 @@ export function OrderPage() {
           </span>
         </div>
 
-        {feedback && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-            {feedback}
-          </div>
-        )}
-
-        {/* Status Timeline */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-500">
             Order Status Timeline
           </h2>
@@ -128,7 +118,9 @@ export function OrderPage() {
                     </span>
                     <span
                       className={`text-sm font-semibold ${
-                        isCompleted ? "text-slate-900" : "text-slate-400"
+                        isCompleted
+                          ? "text-slate-900 dark:text-white"
+                          : "text-slate-400"
                       }`}
                     >
                       {step}
@@ -149,10 +141,11 @@ export function OrderPage() {
           </div>
         </div>
 
-        {/* Items Table */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
-          <h2 className="text-lg font-bold text-slate-900">Ordered Items</h2>
-          <div className="divide-y divide-slate-100">
+        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+            Ordered Items
+          </h2>
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {foundOrder.items.map((item) => {
               const unit = discountPrice(item.price, item.discountPercentage);
               const lineTotal = Math.round(unit * item.quantity * 100) / 100;
@@ -161,19 +154,19 @@ export function OrderPage() {
                   key={item.productId}
                   className="flex items-center justify-between gap-4 py-3"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex min-w-0 items-center gap-3">
                     <img
                       src={item.thumbnail}
                       alt={item.title}
                       loading="lazy"
                       width={56}
                       height={56}
-                      className="h-14 w-14 rounded-lg border border-slate-200 object-cover bg-slate-50"
+                      className="h-14 w-14 rounded-lg border border-slate-200 bg-slate-50 object-cover"
                     />
                     <div className="min-w-0">
                       <Link
                         to={`/products/${item.productId}`}
-                        className="truncate block text-sm font-semibold text-slate-900 hover:text-indigo-600"
+                        className="block truncate text-sm font-semibold text-slate-900 hover:text-indigo-600 dark:text-white"
                       >
                         {item.title}
                       </Link>
@@ -182,7 +175,7 @@ export function OrderPage() {
                       </p>
                     </div>
                   </div>
-                  <span className="text-sm font-bold text-slate-900">
+                  <span className="text-sm font-bold text-slate-900 dark:text-white">
                     {formatPrice(lineTotal)}
                   </span>
                 </div>
@@ -191,24 +184,27 @@ export function OrderPage() {
           </div>
         </div>
 
-        {/* Shipping & Summary */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-2 text-sm">
-            <h2 className="text-base font-bold text-slate-900 mb-2">
+          <div className="space-y-2 rounded-2xl border border-slate-200 bg-white p-6 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-2 text-base font-bold text-slate-900 dark:text-white">
               Shipping Address
             </h2>
-            <p className="font-medium text-slate-800">
+            <p className="font-medium text-slate-800 dark:text-slate-200">
               {foundOrder.shipping.fullName}
             </p>
-            <p className="text-slate-600">{foundOrder.shipping.email}</p>
-            <p className="text-slate-600">
+            <p className="text-slate-600 dark:text-slate-400">
+              {foundOrder.shipping.email}
+            </p>
+            <p className="text-slate-600 dark:text-slate-400">
               {foundOrder.shipping.address}, {foundOrder.shipping.city}
             </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-3 text-sm">
-            <h2 className="text-base font-bold text-slate-900">Order Summary</h2>
-            <div className="flex justify-between text-slate-600">
+          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 text-sm shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              Order Summary
+            </h2>
+            <div className="flex justify-between text-slate-600 dark:text-slate-400">
               <span>Subtotal</span>
               <span>{formatPrice(foundOrder.subtotal)}</span>
             </div>
@@ -218,7 +214,7 @@ export function OrderPage() {
                 <span>−{formatPrice(foundOrder.discount)}</span>
               </div>
             )}
-            <div className="flex justify-between text-slate-600">
+            <div className="flex justify-between text-slate-600 dark:text-slate-400">
               <span>Shipping</span>
               <span>
                 {foundOrder.shippingCost === 0
@@ -226,7 +222,7 @@ export function OrderPage() {
                   : formatPrice(foundOrder.shippingCost)}
               </span>
             </div>
-            <div className="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-slate-900">
+            <div className="flex justify-between border-t border-slate-100 pt-2 text-base font-bold text-slate-900 dark:border-slate-800 dark:text-white">
               <span>Total</span>
               <span>{formatPrice(foundOrder.total)}</span>
             </div>
@@ -244,14 +240,13 @@ export function OrderPage() {
     );
   }
 
-  // P6.1 - ცარიელი სია ზუსტი ტექსტებით
   if (orders.length === 0) {
     return (
-      <div className="mx-auto my-12 max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-xl font-bold text-slate-900">
+      <div className="mx-auto my-12 max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white">
           You have no orders yet.
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
           When you place an order at checkout, it will appear here.
         </p>
         <Link
@@ -264,14 +259,13 @@ export function OrderPage() {
     );
   }
 
-  // P6.1 - შეკვეთების სია
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
           Orders
         </h1>
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-slate-600 dark:text-slate-400">
           Track your active orders and view past purchases.
         </p>
       </div>
@@ -285,11 +279,11 @@ export function OrderPage() {
             <Link
               key={order.id}
               to={`/orders/${order.id}`}
-              className="block rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-indigo-300 hover:shadow-md"
+              className="block rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:border-indigo-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
             >
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <span className="text-base font-bold text-slate-900">
+                  <span className="text-base font-bold text-slate-900 dark:text-white">
                     #{order.number}
                   </span>
                   <p className="text-xs text-slate-500">
@@ -306,7 +300,7 @@ export function OrderPage() {
                   >
                     {status}
                   </span>
-                  <span className="text-lg font-extrabold text-slate-900">
+                  <span className="text-lg font-extrabold text-slate-900 dark:text-white">
                     {formatPrice(order.total)}
                   </span>
                 </div>

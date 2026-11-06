@@ -1,12 +1,13 @@
-import { Container } from './Container';
+import { Container } from "./Container";
 
-export function Footer() {
+export const Footer = () => {
   return (
-    <footer className="mt-auto border-t border-slate-200 bg-white py-6">
-      <Container className="flex flex-col items-center justify-between gap-2 text-center text-sm text-slate-500 sm:flex-row">
-        <p>© {new Date().getFullYear()} 10X Shop. All rights reserved.</p>
-        <p>Built with React, TypeScript & Tailwind CSS v4</p>
+    <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500 transition-colors dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+      <Container>
+        <p>© {new Date().getFullYear()} 10X Shop. Built with React 19, TypeScript & Tailwind CSS v4.</p>
       </Container>
     </footer>
   );
-}
+};
+
+export default Footer;

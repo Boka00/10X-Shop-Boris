@@ -1,15 +1,15 @@
-import { Outlet } from 'react-router-dom';
-import { Header } from './Header';
-import { Footer } from './Footer';
-import { Container } from './Container';
-import { ScrollToTop } from './ScrollToTop';
+import { Outlet } from "react-router-dom";
+import { Header } from "./Header";
+import { Footer } from "./Footer";
+import { Container } from "./Container";
+import { ScrollToTop } from "./ScrollToTop";
 
-export function Layout() {
+export const Layout = () => {
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-100">
       <ScrollToTop />
       <Header />
-      <main className="flex-1 py-8">
+      <main className="flex-1 py-6">
         <Container>
           <Outlet />
         </Container>
@@ -17,4 +17,6 @@ export function Layout() {
       <Footer />
     </div>
   );
-}
+};
+
+export default Layout;
