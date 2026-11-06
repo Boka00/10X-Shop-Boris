@@ -1,18 +1,33 @@
-import { useState } from 'react';
+import { useState} from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { Container } from './Container';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { getSavedOrders, getOrderStatus } from '../../models/Order';
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
-  // დროებითი კალათის რაოდენობა (მე-5 დღეს მივაბამთ CartContext-ს)
   const { totalItems } = useCart();
   const cartCount = totalItems;
+
+  // ვითვლით მხოლოდ იმ შეკვეთებს, რომლებიც არ არის "Delivered"
+  const activeOrdersCount = (() => {
+    if (!user.isLoggedIn) return 0;
+    try {
+      const orders = getSavedOrders();
+      const now = new Date();
+      return orders.filter((order) => {
+        const status = getOrderStatus(order, now);
+        return status !== "Delivered";
+      }).length;
+    } catch (error) {
+      console.error("Failed to calculate active orders:", error);
+      return 0;
+    }
+  })();
 
   const handleLogout = (): void => {
     logout();
@@ -55,12 +70,16 @@ export function Header() {
               </span>
             </NavLink>
 
-            {/* 👇 აი აქ წყდება, Log out გამოჩნდეს თუ Log in 👇 */}
             {user.isLoggedIn ? (
               <>
                <NavLink to="/orders" className={navLinkClass}>
                   <span className="inline-flex items-center gap-1.5">
                     Orders
+                    {activeOrdersCount > 0 && (
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-xs font-bold text-white">
+                        {activeOrdersCount}
+                      </span>
+                    )}
                   </span>
                 </NavLink>
                 
@@ -131,6 +150,23 @@ export function Header() {
                 )}
               </span>
             </NavLink>
+
+            {user.isLoggedIn && (
+              <NavLink
+                to="/orders"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={navLinkClass}
+              >
+                <span className="inline-flex items-center gap-2">
+                  Orders
+                  {activeOrdersCount > 0 && (
+                    <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-indigo-600 px-1.5 text-xs font-bold text-white">
+                      {activeOrdersCount}
+                    </span>
+                  )}
+                </span>
+              </NavLink>
+            )}
 
             {user.isLoggedIn ? (
               <button
