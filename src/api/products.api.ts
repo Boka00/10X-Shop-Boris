@@ -3,7 +3,7 @@ import type { Product, ProductsResponse } from "../types/product";
 const BASE_URL = "https://dummyjson.com";
 
 export async function fetchProducts(
-  limit = 12,
+  limit = 100,
   skip = 0,
   signal?: AbortSignal
 ): Promise<ProductsResponse> {

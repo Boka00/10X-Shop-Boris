@@ -25,7 +25,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = "shop_cart";
 
- function isCartItem(item: unknown): item is CartItem {
+function isCartItem(item: unknown): item is CartItem {
   if (typeof item !== "object" || item === null) return false;
   const candidate = item as Record<string, unknown>;
   return (
@@ -46,7 +46,8 @@ const getInitialCart = (): CartItem[] => {
     const parsed: unknown = JSON.parse(savedCart);
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(isCartItem);
-  } catch {
+  } catch (error) {
+    console.error("Failed to parse cart items from localStorage:", error);
     return [];
   }
 };
@@ -57,8 +58,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     try {
       localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-    } catch {
-      // ignore storage quota errors
+    } catch (error) {
+      console.error("Failed to save cart items to localStorage (quota exceeded or access denied):", error);
     }
   }, [items]);
 
