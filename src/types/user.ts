@@ -19,3 +19,7 @@ export interface CheckoutFormValues {
   city: string;
   zipCode: string;
 }
+
+export type ProfileFormValues = Required<
+  Pick<AuthUser, "firstName" | "lastName" | "email" | "phone">
+>;
