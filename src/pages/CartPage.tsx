@@ -14,7 +14,7 @@ export const CartPage = () => {
       <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50 text-2xl">
         🛒
       </div>
-      <h1 className="text-xl font-bold text-slate-900">Your cart is empty</h1>
+      <h1 className="text-xl font-bold text-slate-900">Your cart is empty.</h1>
       <p className="mt-2 text-sm text-slate-600">
         Looks like you haven't added any products to your cart yet.
       </p>
@@ -22,7 +22,7 @@ export const CartPage = () => {
         to="/"
         className="mt-6 inline-block rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
       >
-        Browse Catalog
+        Browse products
       </Link>
     </div>
   );
@@ -103,7 +103,7 @@ export const CartPage = () => {
               to="/checkout"
               className="block w-full rounded-xl bg-indigo-600 px-6 py-3 text-center text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700"
             >
-              Proceed to Checkout
+              Proceed to checkout
             </Link>
 
             <Link

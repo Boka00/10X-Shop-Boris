@@ -1,59 +1,82 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
-import type { CartItem } from '../types/cart';
-import type { Product } from '../types/product';
-import { discountPrice } from '../utils/format';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import type { CartItem } from "../types/cart";
+import type { Product } from "../types/product";
+import { discountPrice } from "../utils/format";
 
 interface CartContextType {
   items: CartItem[];
+  addItem: (product: Product, qty?: number) => void;
+  removeItem: (productId: number) => void;
+  setQuantity: (productId: number, quantity: number) => void;
+  updateQuantity: (productId: number, quantity: number) => void;
+  clearCart: () => void;
   totalItems: number;
   subtotal: number;
-  addItem: (product: Product, qty?: number) => void;
-  setQuantity: (productId: number, qty: number) => void;
-  removeItem: (productId: number) => void;
-  clearCart: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = 'shop_cart';
+const CART_STORAGE_KEY = "shop_cart";
 
-// საწყისი მონაცემების წაკითხვა localStorage-დან (Lazy Initialization)
-function loadInitialCart(): CartItem[] {
+ function isCartItem(item: unknown): item is CartItem {
+  if (typeof item !== "object" || item === null) return false;
+  const candidate = item as Record<string, unknown>;
+  return (
+    typeof candidate.productId === "number" &&
+    typeof candidate.title === "string" &&
+    typeof candidate.thumbnail === "string" &&
+    typeof candidate.price === "number" &&
+    typeof candidate.discountPercentage === "number" &&
+    typeof candidate.stock === "number" &&
+    typeof candidate.quantity === "number"
+  );
+}
+
+const getInitialCart = (): CartItem[] => {
   try {
-    const raw = localStorage.getItem(CART_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
+    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+    if (!savedCart) return [];
+    const parsed: unknown = JSON.parse(savedCart);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(isCartItem);
   } catch {
     return [];
   }
-}
+};
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(loadInitialCart);
+export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const [items, setItems] = useState<CartItem[]>(getInitialCart);
 
-  // ყოველ ცვლილებაზე ვინახავთ localStorage-ში ('shop_cart')
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // ignore storage quota errors
+    }
   }, [items]);
 
-  // 1. ნივთის დამატება (მზა ნიმუში Immutable განახლებით და stock-ის შემოწმებით)
   const addItem = (product: Product, qty = 1): void => {
     if (product.stock <= 0 || qty <= 0) return;
 
     setItems((prevItems) => {
-      const existing = prevItems.find((item) => item.productId === product.id);
+      const existingItem = prevItems.find(
+        (item) => item.productId === product.id
+      );
 
-      if (existing) {
-        // თუ უკვე კალათაშია, ვზრდით რაოდენობას (მაქსიმუმ stock-მდე)
-        const nextQty = Math.min(existing.quantity + qty, product.stock);
+      if (existingItem) {
+        const nextQty = Math.min(existingItem.quantity + qty, product.stock);
         return prevItems.map((item) =>
           item.productId === product.id ? { ...item, quantity: nextQty } : item
         );
       }
 
-      // თუ ახალია, ვამატებთ მასივის ბოლოში [...prevItems, newItem]
       const newItem: CartItem = {
         productId: product.id,
         title: product.title,
@@ -63,66 +86,71 @@ export function CartProvider({ children }: { children: ReactNode }) {
         stock: product.stock,
         quantity: Math.min(qty, product.stock),
       };
+
       return [...prevItems, newItem];
     });
   };
 
+  const removeItem = (productId: number): void => {
+    setItems((prevItems) =>
+      prevItems.filter((item) => item.productId !== productId)
+    );
+  };
 
-  const setQuantity = (productId: number, qty: number): void => {
+  const setQuantity = (productId: number, quantity: number): void => {
+    if (quantity <= 0) {
+      removeItem(productId);
+      return;
+    }
+
     setItems((prevItems) =>
       prevItems.map((item) =>
-        // დაწერე ტერნარული პირობა აქ...
-        item.productId === productId ? { ...item, quantity: Math.max(1, Math.min(qty, item.stock)) } : item
+        item.productId === productId
+          ? { ...item, quantity: Math.max(1, Math.min(quantity, item.stock)) }
+          : item
       )
     );
   };
 
-  const removeItem = (productId: number): void => {
-    setItems((prevItems) => 
-    prevItems.filter((item)=> item.productId !== productId)
-    )
-  };
-
   const clearCart = (): void => {
-    // დაწერე აქ...
     setItems([]);
   };
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = useMemo(() => {
+    return items.reduce((sum, item) => sum + item.quantity, 0);
+  }, [items]);
 
-  // ფასდაკლებული ჯამის (Subtotal) დათვლა
-  const subtotal = Number(
-    items
-      .reduce(
-        (sum, item) =>
-          sum + discountPrice(item.price, item.discountPercentage) * item.quantity,
-        0
-      )
-      .toFixed(2)
-  );
+  const subtotal = useMemo(() => {
+    const rawTotal = items.reduce((sum, item) => {
+      const unitPrice = discountPrice(item.price, item.discountPercentage);
+      return sum + unitPrice * item.quantity;
+    }, 0);
+    return Math.round(rawTotal * 100) / 100;
+  }, [items]);
 
   return (
     <CartContext.Provider
       value={{
         items,
+        addItem,
+        removeItem,
+        setQuantity,
+        updateQuantity: setQuantity,
+        clearCart,
         totalItems,
         subtotal,
-        addItem,
-        setQuantity,
-        removeItem,
-        clearCart,
       }}
     >
       {children}
     </CartContext.Provider>
   );
-}
+};
 
 // eslint-disable-next-line react-refresh/only-export-components
-export function useCart(): CartContextType {
+export const useCart = (): CartContextType => {
   const context = useContext(CartContext);
   if (!context) {
-    throw new Error('useCart must be used within a CartProvider');
+    throw new Error("useCart must be used within a CartProvider");
   }
   return context;
-}
+};
