@@ -1,16 +1,18 @@
-import type { ReactNode } from "react"
-import { useAuth } from "../context/AuthContext"
 import { Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import type { JSX } from "react";
 
-const ProtectedRoute = ({children}: {children: ReactNode}) => {
-
-    const { user } = useAuth();
-    const location = useLocation();
-
-    if(!user.isLoggedIn) return <Navigate to="/login" state={{from: location}} replace/>
-    
-    return <>{children}</>
-
+interface ProtectedRouteProps {
+  children: JSX.Element;
 }
 
-export default ProtectedRoute
+export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  if (!user?.isLoggedIn) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  return children;
+};
