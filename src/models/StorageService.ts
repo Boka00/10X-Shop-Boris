@@ -9,10 +9,10 @@ export const STORAGE_KEYS = {
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];
 
 export class StorageService<T> {
-  private readonly key: StorageKey;
+  private readonly key: string;
   private readonly validator?: (val: unknown) => val is T;
 
-  constructor(key: StorageKey, validator?: (val: unknown) => val is T) {
+  constructor(key: string, validator?: (val: unknown) => val is T) {
     this.key = key;
     this.validator = validator;
   }
@@ -22,12 +22,12 @@ export class StorageService<T> {
       const raw = localStorage.getItem(this.key);
       if (!raw) return null;
       const parsed: unknown = JSON.parse(raw);
-      if (this.validator && !this.validator(parsed)) {
-        return null;
+      if (this.validator) {
+        return this.validator(parsed) ? parsed : null;
       }
       return parsed as T;
     } catch (error) {
-      console.error(`Failed to read "${this.key}" from localStorage:`, error);
+      console.error(`StorageService: Failed to read key "${this.key}":`, error);
       return null;
     }
   }
@@ -36,7 +36,7 @@ export class StorageService<T> {
     try {
       localStorage.setItem(this.key, JSON.stringify(value));
     } catch (error) {
-      console.error(`Failed to write "${this.key}" to localStorage:`, error);
+      console.error(`StorageService: Failed to write key "${this.key}":`, error);
     }
   }
 
@@ -44,7 +44,7 @@ export class StorageService<T> {
     try {
       localStorage.removeItem(this.key);
     } catch (error) {
-      console.error(`Failed to remove "${this.key}" from localStorage:`, error);
+      console.error(`StorageService: Failed to remove key "${this.key}":`, error);
     }
   }
 }

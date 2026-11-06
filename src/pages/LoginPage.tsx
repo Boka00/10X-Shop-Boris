@@ -1,81 +1,62 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
 import { useFormik } from "formik";
-import type { FormikHelpers } from "formik";
+import { useAuth } from "../context/AuthContext";
 import { loginSchema } from "../schemas/auth.schema";
 import type { LoginFormValues } from "../types/user";
 
 function getRedirectPath(state: unknown): string {
   if (typeof state === "object" && state !== null && "from" in state) {
-    const fromValue = (state as Record<string, unknown>).from;
-    if (typeof fromValue === "string" && fromValue.length > 0) {
-      return fromValue;
+    const fromVal = (state as { from?: unknown }).from;
+    if (typeof fromVal === "string" && fromVal.startsWith("/")) {
+      return fromVal;
     }
     if (
-      typeof fromValue === "object" &&
-      fromValue !== null &&
-      "pathname" in fromValue
+      typeof fromVal === "object" &&
+      fromVal !== null &&
+      "pathname" in fromVal &&
+      typeof (fromVal as { pathname?: unknown }).pathname === "string"
     ) {
-      const pathname = (fromValue as Record<string, unknown>).pathname;
-      if (typeof pathname === "string" && pathname.length > 0) {
-        return pathname;
-      }
+      return (fromVal as { pathname: string }).pathname;
     }
   }
   return "/";
 }
 
-const LoginPage = () => {
+export const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = getRedirectPath(location.state);
+  const redirectPath = getRedirectPath(location.state);
 
-  const onSubmitFunc = async (
-    values: LoginFormValues,
-    actions: FormikHelpers<LoginFormValues>
-  ) => {
-    await new Promise<void>((resolve) => setTimeout(() => resolve(), 300));
-
-    login(values.username.trim());
-    actions.resetForm();
-
-    navigate(from, { replace: true });
-  };
-
-  const {
-    values,
-    errors,
-    touched,
-    isValid,
-    dirty,
-    handleChange,
-    isSubmitting,
-    handleBlur,
-    handleSubmit,
-  } = useFormik<LoginFormValues>({
+  const formik = useFormik<LoginFormValues>({
     initialValues: {
       username: "",
       password: "",
     },
     validationSchema: loginSchema,
-    onSubmit: onSubmitFunc,
+    onSubmit: (values) => {
+      login(values.username.trim());
+      navigate(redirectPath, { replace: true });
+    },
   });
 
   return (
-    <div className="mx-auto max-w-md py-10">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-          Log In
-        </h1>
-        <p className="mt-1 text-sm text-slate-600">
-          Enter any username and password (min 6 chars) to continue.
-        </p>
-        <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-5">
+    <div className="mx-auto my-10 max-w-md space-y-6">
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            Welcome Back
+          </h1>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            Sign in to your 10X Shop account
+          </p>
+        </div>
+
+        <form onSubmit={formik.handleSubmit} noValidate className="space-y-4">
           <div>
             <label
               htmlFor="username"
-              className="block text-sm font-medium text-slate-700"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
             >
               Username
             </label>
@@ -83,19 +64,15 @@ const LoginPage = () => {
               id="username"
               name="username"
               type="text"
-              placeholder="e.g. John"
-              value={values.username}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className={`mt-1.5 block w-full rounded-lg border px-3.5 py-2.5 text-sm text-slate-900 focus:ring-1 focus:outline-none ${
-                errors.username && touched.username
-                  ? "border-red-500 focus:ring-red-500"
-                  : "border-slate-300 focus:ring-indigo-500"
-              }`}
+              value={formik.values.username}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              placeholder="emilys"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
-            {errors.username && touched.username && (
-              <p className="mt-1 text-xs font-medium text-red-500">
-                {errors.username}
+            {formik.touched.username && formik.errors.username && (
+              <p className="mt-1 text-xs font-medium text-red-600">
+                {formik.errors.username}
               </p>
             )}
           </div>
@@ -103,7 +80,7 @@ const LoginPage = () => {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-slate-700"
+              className="block text-sm font-medium text-slate-700 dark:text-slate-300"
             >
               Password
             </label>
@@ -111,27 +88,22 @@ const LoginPage = () => {
               id="password"
               name="password"
               type="password"
-              placeholder="e.g. Pass123"
-              value={values.password}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              className={`mt-1.5 block w-full rounded-lg border px-3.5 py-2.5 text-sm text-slate-900 focus:ring-1 focus:outline-none ${
-                errors.password && touched.password
-                  ? "border-red-500 focus:ring-red-500"
-                  : "border-slate-300 focus:ring-indigo-500"
-              }`}
+              value={formik.values.password}
+              onChange={formik.handleChange}
+              onBlur={formik.handleBlur}
+              placeholder="••••••"
+              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white"
             />
-            {errors.password && touched.password && (
-              <p className="mt-1 text-xs font-medium text-red-500">
-                {errors.password}
+            {formik.touched.password && formik.errors.password && (
+              <p className="mt-1 text-xs font-medium text-red-600">
+                {formik.errors.password}
               </p>
             )}
           </div>
 
           <button
             type="submit"
-            disabled={!isValid || !dirty || isSubmitting}
-            className="w-full cursor-pointer rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none disabled:opacity-50"
+            className="w-full cursor-pointer rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
           >
             Log In
           </button>
@@ -140,7 +112,7 @@ const LoginPage = () => {
         <div className="mt-6 text-center">
           <Link
             to="/"
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            className="text-sm font-medium text-slate-600 transition-colors hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400"
           >
             ← Back to catalog
           </Link>

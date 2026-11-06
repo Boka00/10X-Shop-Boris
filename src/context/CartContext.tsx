@@ -3,143 +3,115 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useState,
+  useReducer,
   type ReactNode,
 } from "react";
-import type { CartItem } from "../types/cart";
+import type { CartItem, CartState } from "../types/cart";
 import type { Product } from "../types/product";
-import { discountPrice } from "../utils/format";
+import { Cart, cartReducer, isCartItem, isCartState } from "../models/Cart";
+import { STORAGE_KEYS, StorageService } from "../models/StorageService";
 
 interface CartContextType {
   items: CartItem[];
+  promoCode: string | null;
   addItem: (product: Product, qty?: number) => void;
   removeItem: (productId: number) => void;
   setQuantity: (productId: number, quantity: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
   clearCart: () => void;
+  applyPromo: (code: string) => boolean;
+  removePromo: () => void;
   totalItems: number;
   subtotal: number;
+  discount: number;
+  shippingCost: number;
+  total: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = "shop_cart";
+const cartStateStorage = new StorageService<CartState>(
+  STORAGE_KEYS.cart,
+  isCartState
+);
 
-function isCartItem(item: unknown): item is CartItem {
-  if (typeof item !== "object" || item === null) return false;
-  const candidate = item as Record<string, unknown>;
-  return (
-    typeof candidate.productId === "number" &&
-    typeof candidate.title === "string" &&
-    typeof candidate.thumbnail === "string" &&
-    typeof candidate.price === "number" &&
-    typeof candidate.discountPercentage === "number" &&
-    typeof candidate.stock === "number" &&
-    typeof candidate.quantity === "number"
-  );
-}
+const getInitialCartState = (): CartState => {
+  const savedState = cartStateStorage.get();
+  if (savedState) return savedState;
 
-const getInitialCart = (): CartItem[] => {
   try {
-    const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-    if (!savedCart) return [];
-    const parsed: unknown = JSON.parse(savedCart);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isCartItem);
+    const raw = localStorage.getItem(STORAGE_KEYS.cart);
+    if (!raw) return { items: [], promoCode: null };
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return { items: parsed.filter(isCartItem), promoCode: null };
+    }
   } catch (error) {
-    console.error("Failed to parse cart items from localStorage:", error);
-    return [];
+    console.error("Failed to read legacy cart from localStorage:", error);
   }
+  return { items: [], promoCode: null };
 };
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>(getInitialCart);
+  const [state, dispatch] = useReducer(
+    cartReducer,
+    undefined,
+    getInitialCartState
+  );
 
   useEffect(() => {
-    try {
-      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-    } catch (error) {
-      console.error("Failed to save cart items to localStorage (quota exceeded or access denied):", error);
-    }
-  }, [items]);
+    cartStateStorage.set(state);
+  }, [state]);
+
+  const cartModel = useMemo(
+    () => new Cart(state.items, state.promoCode),
+    [state.items, state.promoCode]
+  );
 
   const addItem = (product: Product, qty = 1): void => {
-    if (product.stock <= 0 || qty <= 0) return;
-
-    setItems((prevItems) => {
-      const existingItem = prevItems.find(
-        (item) => item.productId === product.id
-      );
-
-      if (existingItem) {
-        const nextQty = Math.min(existingItem.quantity + qty, product.stock);
-        return prevItems.map((item) =>
-          item.productId === product.id ? { ...item, quantity: nextQty } : item
-        );
-      }
-
-      const newItem: CartItem = {
-        productId: product.id,
-        title: product.title,
-        thumbnail: product.thumbnail,
-        price: product.price,
-        discountPercentage: product.discountPercentage,
-        stock: product.stock,
-        quantity: Math.min(qty, product.stock),
-      };
-
-      return [...prevItems, newItem];
-    });
+    dispatch({ type: "ADD_ITEM", product, qty });
   };
 
   const removeItem = (productId: number): void => {
-    setItems((prevItems) =>
-      prevItems.filter((item) => item.productId !== productId)
-    );
+    dispatch({ type: "REMOVE_ITEM", productId });
   };
 
   const setQuantity = (productId: number, quantity: number): void => {
-    if (quantity <= 0) {
-      removeItem(productId);
-      return;
-    }
-
-    setItems((prevItems) =>
-      prevItems.map((item) =>
-        item.productId === productId
-          ? { ...item, quantity: Math.max(1, Math.min(quantity, item.stock)) }
-          : item
-      )
-    );
+    dispatch({ type: "SET_QTY", productId, qty: quantity });
   };
 
   const clearCart = (): void => {
-    setItems([]);
+    dispatch({ type: "CLEAR" });
   };
 
-  const totalItems = useMemo(() => {
-    return items.reduce((sum, item) => sum + item.quantity, 0);
-  }, [items]);
+  const applyPromo = (code: string): boolean => {
+    const normalized = code.trim().toUpperCase();
+    if (normalized === Cart.PROMO_CODE) {
+      dispatch({ type: "APPLY_PROMO", code: normalized });
+      return true;
+    }
+    return false;
+  };
 
-  const subtotal = useMemo(() => {
-    const rawTotal = items.reduce((sum, item) => {
-      const unitPrice = discountPrice(item.price, item.discountPercentage);
-      return sum + unitPrice * item.quantity;
-    }, 0);
-    return Math.round(rawTotal * 100) / 100;
-  }, [items]);
+  const removePromo = (): void => {
+    dispatch({ type: "REMOVE_PROMO" });
+  };
 
   return (
     <CartContext.Provider
       value={{
-        items,
+        items: state.items,
+        promoCode: state.promoCode,
         addItem,
         removeItem,
         setQuantity,
-        updateQuantity: setQuantity,
         clearCart,
-        totalItems,
-        subtotal,
+        applyPromo,
+        removePromo,
+        totalItems: cartModel.itemCount,
+        subtotal: cartModel.subtotal(),
+        discount: cartModel.discount(),
+        shippingCost: cartModel.shipping(),
+        total: cartModel.total(),
       }}
     >
       {children}

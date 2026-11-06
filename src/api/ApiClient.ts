@@ -9,9 +9,12 @@ export class ApiClient {
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...(init.headers as Record<string, string>),
+      ...(init.headers as Record<string, string> | undefined),
     };
+
+    if (init.body !== undefined && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
 
     const response = await fetch(`${this.baseUrl}${path}`, {
       ...init,
@@ -19,8 +22,11 @@ export class ApiClient {
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new ApiError(response.status, text || response.statusText);
+      const errorText = await response.text().catch(() => "");
+      throw new ApiError(
+        response.status,
+        errorText || `HTTP Error ${response.status}: ${response.statusText}`
+      );
     }
 
     return (await response.json()) as T;

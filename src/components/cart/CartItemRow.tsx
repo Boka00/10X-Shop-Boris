@@ -2,106 +2,88 @@ import { Link } from "react-router-dom";
 import type { CartItem } from "../../types/cart";
 import { discountPrice, formatPrice } from "../../utils/format";
 
-interface CartItemRowProps {
-    item: CartItem;
-    onUpdateQuantity: (productId: number, qty: number) => void;
-    onRemove: (productId: number) => void
+export interface CartItemRowProps {
+  item: CartItem;
+  onUpdateQuantity: (productId: number, quantity: number) => void;
+  onRemove: (productId: number) => void;
 }
 
-export const CartItemRow = ({item, onUpdateQuantity, onRemove}: CartItemRowProps) => {
-
+export const CartItemRow = ({
+  item,
+  onUpdateQuantity,
+  onRemove,
+}: CartItemRowProps) => {
   const unitPrice = discountPrice(item.price, item.discountPercentage);
-  const hasDiscount = (item.discountPercentage >= 1);
-  const lineTotal = unitPrice * item.quantity;
+  const lineTotal = Math.round(unitPrice * item.quantity * 100) / 100;
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-      {/* Left: Image & Product Info */}
+    <div className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-center gap-4">
-       
-        <Link
-          to={`/products/${item.productId}`}
-          className="h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
-        >
-         
+        <Link to={`/products/${item.productId}`} className="shrink-0">
           <img
             src={item.thumbnail}
             alt={item.title}
-            width="80"
-            height="80"
+            width={80}
+            height={80}
             loading="lazy"
-            className="h-full w-full object-cover"
+            className="h-20 w-20 rounded-xl border border-slate-200 bg-slate-50 object-cover dark:border-slate-700 dark:bg-slate-800"
           />
         </Link>
-
         <div className="space-y-1">
-         
           <Link
             to={`/products/${item.productId}`}
-            className="text-base font-semibold text-slate-900 transition-colors hover:text-indigo-600 line-clamp-1"
+            className="text-base font-bold text-slate-900 hover:text-indigo-600 dark:text-white dark:hover:text-indigo-400"
           >
             {item.title}
           </Link>
-
-          <div className="flex items-center gap-2 text-sm">
-            <span className="font-medium text-slate-700">
+          <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
               {formatPrice(unitPrice)}
             </span>
-          
-           {hasDiscount && (
-             <span className="text-xs text-slate-400 line-through">
-              {formatPrice(item.price)}
-            </span>
-           )}
+            {item.discountPercentage >= 1 && (
+              <span className="line-through">{formatPrice(item.price)}</span>
+            )}
+            <span>· Stock: {item.stock}</span>
           </div>
-
-          <p className="text-xs text-slate-400">
-            Max available: {item.stock}
-          </p>
         </div>
       </div>
 
-      {/* Right: Quantity Stepper, Line Total & Remove */}
-      <div className="flex items-center justify-between gap-6 border-t border-slate-100 pt-3 sm:border-t-0 sm:pt-0">
-        {/* Quantity Stepper */}
-        <div className="flex items-center rounded-lg border border-slate-300 bg-white">
-        
+      <div className="flex items-center justify-between gap-4 sm:justify-end">
+        <div className="flex items-center rounded-lg border border-slate-300 bg-white dark:border-slate-700 dark:bg-slate-800">
           <button
             type="button"
+            aria-label={`Decrease quantity of ${item.title}`}
             onClick={() => onUpdateQuantity(item.productId, item.quantity - 1)}
             disabled={item.quantity <= 1}
-            className="cursor-pointer px-2.5 py-1 text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            className="cursor-pointer px-3 py-1.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-700"
           >
-            -
+            −
           </button>
-
-          <span className="w-8 text-center text-sm font-semibold text-slate-900">
+          <span className="w-10 text-center text-sm font-semibold text-slate-900 dark:text-white">
             {item.quantity}
           </span>
-
           <button
             type="button"
+            aria-label={`Increase quantity of ${item.title}`}
             onClick={() => onUpdateQuantity(item.productId, item.quantity + 1)}
             disabled={item.quantity >= item.stock}
-            className="cursor-pointer px-2.5 py-1 text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            className="cursor-pointer px-3 py-1.5 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             +
           </button>
         </div>
 
-        {/* Line Total Price */}
-        <div className="w-24 text-right">
-          <span className="text-base font-bold text-slate-900">
+        <div className="min-w-24 text-right">
+          <p className="text-base font-extrabold text-slate-900 dark:text-white">
             {formatPrice(lineTotal)}
-          </span>
+          </p>
         </div>
 
-        {/* Remove Button */}
         <button
           type="button"
+          aria-label={`Remove ${item.title} from cart`}
           onClick={() => onRemove(item.productId)}
-          className="cursor-pointer rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
-          title="Remove item"
+          className="cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-slate-700 dark:hover:bg-red-950/40"
         >
           Remove
         </button>
@@ -109,3 +91,5 @@ export const CartItemRow = ({item, onUpdateQuantity, onRemove}: CartItemRowProps
     </div>
   );
 };
+
+export default CartItemRow;
