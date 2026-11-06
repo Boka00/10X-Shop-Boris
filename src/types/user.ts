@@ -5,6 +5,7 @@ export interface AuthUser {
   lastName?: string;
   email?: string;
   phone?: string;
+  theme?: "light" | "dark";
 }
 
 export interface LoginFormValues {

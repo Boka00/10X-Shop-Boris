@@ -8,13 +8,12 @@ export interface ShippingInfo {
   address: string;
   city: string;
   postalCode?: string;
-  phone?: string;
-  country?: string;
 }
 
 export interface Order {
   id: number;
   number: string;
+  ownerUsername?: string;
   items: CartItem[];
   shipping: ShippingInfo;
   subtotal: number;

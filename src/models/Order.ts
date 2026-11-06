@@ -1,40 +1,52 @@
-import type { CartItem } from "../types/cart";
 import type { Order, OrderStatus, ShippingInfo } from "../types/order";
-import { Cart } from "./Cart";
+import type { CartItem } from "../types/cart";
+import { Cart, isCartItem } from "./Cart";
 import { STORAGE_KEYS, StorageService } from "./StorageService";
 
-export function isOrder(value: unknown): value is Order {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as Record<string, unknown>;
+function isShippingInfo(val: unknown): val is ShippingInfo {
+  if (typeof val !== "object" || val === null) return false;
+  const s = val as Record<string, unknown>;
   return (
-    typeof candidate.id === "number" &&
-    typeof candidate.number === "string" &&
-    Array.isArray(candidate.items) &&
-    typeof candidate.shipping === "object" &&
-    candidate.shipping !== null &&
-    typeof candidate.total === "number" &&
-    typeof candidate.placedAt === "string"
+    typeof s.fullName === "string" &&
+    typeof s.email === "string" &&
+    typeof s.address === "string" &&
+    typeof s.city === "string"
   );
 }
 
-export function isOrderArray(value: unknown): value is Order[] {
-  return Array.isArray(value) && value.every(isOrder);
+function isOrder(val: unknown): val is Order {
+  if (typeof val !== "object" || val === null) return false;
+  const o = val as Record<string, unknown>;
+  return (
+    typeof o.id === "number" &&
+    typeof o.number === "string" &&
+    Array.isArray(o.items) &&
+    o.items.every(isCartItem) &&
+    isShippingInfo(o.shipping) &&
+    typeof o.subtotal === "number" &&
+    typeof o.discount === "number" &&
+    typeof o.shippingCost === "number" &&
+    typeof o.total === "number" &&
+    typeof o.placedAt === "string"
+  );
 }
 
-export function getOrderStatus(
-  order: Pick<Order, "placedAt">,
-  now: Date = new Date()
-): OrderStatus {
+function isOrderArray(val: unknown): val is Order[] {
+  return Array.isArray(val) && val.every(isOrder);
+}
+
+const ordersStorage = new StorageService<Order[]>(
+  STORAGE_KEYS.orders,
+  isOrderArray
+);
+
+export function getOrderStatus(order: Order, now: Date = new Date()): OrderStatus {
   const placedTime = new Date(order.placedAt).getTime();
   const elapsedMs = Math.max(0, now.getTime() - placedTime);
-  const elapsedMinutes = elapsedMs / (1000 * 60);
+  const elapsedMinutes = elapsedMs / 60_000;
 
-  if (elapsedMinutes < 1) {
-    return "Processing";
-  }
-  if (elapsedMinutes <= 3) {
-    return "Shipped";
-  }
+  if (elapsedMinutes < 1) return "Processing";
+  if (elapsedMinutes <= 3) return "Shipped";
   return "Delivered";
 }
 
@@ -48,24 +60,32 @@ export class OrderModel {
   public static create(
     items: CartItem[],
     shipping: ShippingInfo,
-    existingCount: number,
-    promoCode: string | null = null
-  ): OrderModel {
+    promoCode: string | null = null,
+    ownerUsername?: string
+  ): Order {
     const cart = new Cart(items, promoCode);
-    const id = Date.now();
-    const number = `10X-${String(existingCount + 1).padStart(5, "0")}`;
+    const allOrders = ordersStorage.get() ?? [];
+    const maxSeq = allOrders.reduce((max, ord) => {
+      const match = /^10X-(\d+)$/.exec(ord.number);
+      const num = match ? Number(match[1]) : 0;
+      return Math.max(max, num);
+    }, 0);
 
-    return new OrderModel({
-      id,
-      number,
-      items,
-      shipping,
+    const nextSeq = maxSeq + 1;
+    const formattedNumber = `10X-${String(nextSeq).padStart(5, "0")}`;
+
+    return {
+      id: Date.now(),
+      number: formattedNumber,
+      ownerUsername: ownerUsername ? ownerUsername.trim().toLowerCase() : undefined,
+      items: items.map((item) => ({ ...item })),
+      shipping: { ...shipping },
       subtotal: cart.subtotal(),
       discount: cart.discount(),
       shippingCost: cart.shipping(),
       total: cart.total(),
       placedAt: new Date().toISOString(),
-    });
+    };
   }
 
   public getStatus(now: Date = new Date()): OrderStatus {
@@ -77,16 +97,17 @@ export class OrderModel {
   }
 }
 
-export const ordersStorage = new StorageService<Order[]>(
-  STORAGE_KEYS.orders,
-  isOrderArray
-);
-
-export function getSavedOrders(): Order[] {
-  return ordersStorage.get() ?? [];
+export function getSavedOrders(username?: string): Order[] {
+  const all = ordersStorage.get() ?? [];
+  if (!username) return all;
+  const normalized = username.trim().toLowerCase();
+  return all.filter(
+    (order) =>
+      !order.ownerUsername || order.ownerUsername.toLowerCase() === normalized
+  );
 }
 
-export function saveNewOrder(order: Order): void {
-  const current = getSavedOrders();
-  ordersStorage.set([order, ...current]);
+export function saveOrder(order: Order): void {
+  const existing = ordersStorage.get() ?? [];
+  ordersStorage.set([order, ...existing]);
 }
