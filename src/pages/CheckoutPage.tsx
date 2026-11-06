@@ -1,4 +1,4 @@
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useCart } from "../context/CartContext";
 import { useState } from "react";
@@ -8,6 +8,7 @@ import type { CheckoutFormValues } from "../types/user";
 import type { ShippingInfo } from "../types/order";
 import { checkoutSchema } from "../schemas/auth.schema";
 import OrderSuccess from "../components/checkout/OrderSuccess";
+import { OrderModel, getSavedOrders, saveNewOrder } from "../models/Order";
 
 interface SubmittedOrder {
   orderId: string;
@@ -22,8 +23,6 @@ export const CheckoutPage = () => {
   const [submittedOrder, setSubmittedOrder] = useState<SubmittedOrder | null>(null);
 
   function onSubmitFunction(formValues: CheckoutFormValues) {
-    const generatedId = `10X-${String(Math.floor(10000 + Math.random() * 90000))}`;
-
     const shippingInfo: ShippingInfo = {
       fullName: formValues.fullname.trim(),
       email: formValues.email.trim(),
@@ -32,10 +31,17 @@ export const CheckoutPage = () => {
       postalCode: formValues.zipCode.trim(),
     };
 
+    // ვქმნით შეკვეთას ჩვენი OrderModel OOP კლასით და ვინახავთ shop_orders-ში
+    const existingOrdersCount = getSavedOrders().length;
+    const orderModel = OrderModel.create(items, shippingInfo, existingOrdersCount);
+    const orderData = orderModel.toJSON();
+
+    saveNewOrder(orderData);
+
     setSubmittedOrder({
-      orderId: generatedId,
+      orderId: orderData.number,
       shipping: shippingInfo,
-      totalPaid: subtotal,
+      totalPaid: orderData.total,
     });
 
     clearCart();
@@ -77,7 +83,20 @@ export const CheckoutPage = () => {
   }
 
   if (items.length === 0) {
-    return <Navigate to="/cart" replace />;
+    return (
+      <div className="mx-auto my-12 max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <h1 className="text-xl font-bold text-slate-900">Your cart is empty</h1>
+        <p className="mt-2 text-sm text-slate-600">
+          Add some products to your cart before proceeding to checkout.
+        </p>
+        <Link
+          to="/"
+          className="mt-6 inline-block rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+        >
+          Browse Catalog
+        </Link>
+      </div>
+    );
   }
 
   return (

@@ -1,16 +1,18 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
-import type { AuthUser } from "../types/user";
+import type { AuthUser, ProfileFormValues } from "../types/user";
+import { STORAGE_KEYS } from "../models/StorageService";
 
 interface AuthContextType {
   user: AuthUser;
   login: (username: string) => void;
   logout: () => void;
+  updateProfile: (values: ProfileFormValues) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const AUTH_STORAGE_KEY = "shop_user";
+const AUTH_STORAGE_KEY = STORAGE_KEYS.user;
 
 const getInitialAuth = (): AuthUser => {
   try {
@@ -47,10 +49,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const login = (username: string) => {
-    setUser({
+    setUser((prev) => ({
+      ...prev,
       username,
       isLoggedIn: true,
-    });
+    }));
+  };
+
+  const updateProfile = (values: ProfileFormValues) => {
+    setUser((prev) => ({
+      ...prev,
+      firstName: values.firstName.trim(),
+      lastName: values.lastName.trim(),
+      email: values.email.trim(),
+      phone: values.phone.trim(),
+      username:
+        `${values.firstName.trim()} ${values.lastName.trim()}`.trim() ||
+        prev.username,
+    }));
   };
 
   const logout = () => {
@@ -66,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
