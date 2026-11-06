@@ -32,3 +32,23 @@ export interface Category {
   name: string;
   url: string;
 }
+
+export type SortOption =
+  | ""
+  | "price-asc"
+  | "price-desc"
+  | "rating-desc"
+  | "title-asc";
+
+export function isProduct(value: unknown): value is Product {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.id === "number" &&
+    typeof candidate.title === "string" &&
+    typeof candidate.price === "number" &&
+    typeof candidate.discountPercentage === "number" &&
+    typeof candidate.stock === "number" &&
+    typeof candidate.thumbnail === "string"
+  );
+}
